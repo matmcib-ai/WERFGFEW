@@ -1,0 +1,113 @@
+-- PRYSM FLOAT V3
+-- Place in StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+
+local CONFIG = {
+    Key = Enum.KeyCode.G,
+    Height = 3.5,
+    Width = 10,
+    Depth = 10,
+    Transparency = 0.15,
+    Color = Color3.fromRGB(90, 110, 255),
+}
+
+local enabled = false
+local platform
+local root
+local heartbeat
+
+local function destroyPlatform()
+    enabled = false
+
+    if heartbeat then
+        heartbeat:Disconnect()
+        heartbeat = nil
+    end
+
+    if platform then
+        platform:Destroy()
+        platform = nil
+    end
+end
+
+local function createPlatform()
+    destroyPlatform()
+
+    local character = Player.Character
+    if not character then return end
+
+    root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    enabled = true
+
+    platform = Instance.new("Part")
+    platform.Name = "Prysm_AntiLag_Float"
+    platform.Size = Vector3.new(
+        CONFIG.Width,
+        1,
+        CONFIG.Depth
+    )
+
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.CanTouch = false
+    platform.CanQuery = false
+    platform.Material = Enum.Material.ForceField
+    platform.Color = CONFIG.Color
+    platform.Transparency = CONFIG.Transparency
+    platform.Parent = workspace
+
+    -- Position immediately
+    platform.Position = root.Position - Vector3.new(
+        0,
+        CONFIG.Height,
+        0
+    )
+
+    -- Lightweight physics-frame tracking
+    heartbeat = RunService.Heartbeat:Connect(function()
+        if not enabled then return end
+
+        if not root or not root.Parent or not platform then
+            destroyPlatform()
+            return
+        end
+
+        local position = root.Position
+
+        -- Always match current character height and depth
+        platform.Position = Vector3.new(
+            position.X,
+            position.Y - CONFIG.Height,
+            position.Z
+        )
+    end)
+end
+
+local function toggle()
+    if enabled then
+        destroyPlatform()
+    else
+        createPlatform()
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+
+    if input.KeyCode == CONFIG.Key then
+        toggle()
+    end
+end)
+
+Player.CharacterAdded:Connect(function()
+    destroyPlatform()
+end)
+
+print("PRYSM FLOAT V3 | G = TOGGLE")
